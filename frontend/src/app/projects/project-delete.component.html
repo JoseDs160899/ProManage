@@ -1,0 +1,37 @@
+<div class="form-page-wrapper">
+  <a class="form-back-link" routerLink="/projects">
+    <i class="fa-solid fa-arrow-left"></i> Volver al listado
+  </a>
+
+  <div class="card form-page-card shadow-sm confirm-card">
+    <div class="form-page-card__header">
+      <div class="form-page-card__icon is-edit">
+        <i class="fa-solid fa-trash"></i>
+      </div>
+      <div>
+        <h1 class="form-page-card__title">Eliminar proyecto</h1>
+        <p class="form-page-card__subtitle">
+          Esta accion no se puede deshacer. Confirma si deseas continuar.
+        </p>
+      </div>
+    </div>
+
+    <div class="card-body">
+      @if (error) {
+        <div class="alert alert-danger">{{ error }}</div>
+      }
+
+      @if (proyecto) {
+        <p class="mb-1"><strong>{{ proyecto.titulo }}</strong></p>
+        <p class="text-muted small mb-4">{{ proyecto.descripcion || 'Sin descripcion' }}</p>
+
+        <div class="form-actions">
+          <a class="btn btn-outline-secondary" routerLink="/projects">Cancelar</a>
+          <button class="btn btn-danger" type="button" [disabled]="eliminando" (click)="confirmar()">
+            Eliminar
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</div>

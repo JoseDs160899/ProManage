@@ -1,0 +1,105 @@
+@if (error) {
+  <div class="alert alert-danger">{{ error }}</div>
+}
+
+@if (cargando) {
+  <div class="text-muted">Cargando proyectos...</div>
+} @else {
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card metric-card metric-total shadow-sm">
+        <div class="card-body">
+          <p class="mb-1">Total</p>
+          <h3 class="mb-0">{{ total }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card metric-card metric-progress shadow-sm">
+        <div class="card-body">
+          <p class="mb-1">En progreso</p>
+          <h3 class="mb-0">{{ enProgreso }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card metric-card metric-completed shadow-sm">
+        <div class="card-body">
+          <p class="mb-1">Completados</p>
+          <h3 class="mb-0">{{ completados }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card metric-card metric-pending shadow-sm">
+        <div class="card-body">
+          <p class="mb-1">Pendientes</p>
+          <h3 class="mb-0">{{ pendientes }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card table-card shadow-sm">
+    <div class="card-header fw-bold bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span><i class="fa-regular fa-folder-open me-2 text-primary"></i>Registro de proyectos</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge text-bg-primary">{{ total }} registros</span>
+        <a class="btn btn-sm btn-success" routerLink="/projects/nuevo">
+          <i class="fa-solid fa-plus me-1"></i>Nuevo proyecto
+        </a>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      @if (proyectos.length === 0) {
+        <div class="p-4 text-muted">No hay proyectos registrados.</div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Titulo</th>
+                <th>Descripcion</th>
+                <th>Vencimiento</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of proyectos; track p.id; let i = $index) {
+                <tr>
+                  <td>{{ i + 1 }}</td>
+                  <td><strong>{{ p.titulo }}</strong></td>
+                  <td class="text-muted small">{{ p.descripcion || '—' }}</td>
+                  <td>{{ p.fechaVencimiento | date:'dd/MM/yyyy' }}</td>
+                  <td>
+                    <span class="badge" [class]="prioridadBadge(p.prioridad)">
+                      {{ etiquetaPrioridad(p.prioridad) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class]="estadoBadge(p.estado)">
+                      {{ etiquetaEstado(p.estado) }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <a class="btn btn-outline-secondary" [routerLink]="['/projects', p.id, 'editar']" title="Editar">
+                        <i class="fa-solid fa-pen"></i>
+                      </a>
+                      <a class="btn btn-outline-danger" [routerLink]="['/projects', p.id, 'eliminar']" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+}

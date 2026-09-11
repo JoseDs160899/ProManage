@@ -1,0 +1,99 @@
+<div class="form-page-wrapper">
+  <a class="form-back-link" routerLink="/projects">
+    <i class="fa-solid fa-arrow-left"></i> Volver al listado
+  </a>
+
+  <div class="card form-page-card shadow-sm">
+    <div class="form-page-card__header">
+      <div class="form-page-card__icon" [class.is-edit]="editing">
+        <i class="fa-solid" [class.fa-folder-plus]="!editing" [class.fa-pen-to-square]="editing"></i>
+      </div>
+      <div>
+        <h1 class="form-page-card__title">{{ editing ? 'Editar proyecto' : 'Nuevo proyecto' }}</h1>
+        <p class="form-page-card__subtitle">
+          Completa la informacion del proyecto. Los datos se guardan en la API REST.
+        </p>
+      </div>
+    </div>
+
+    <div class="card-body">
+      @if (error) {
+        <div class="alert alert-danger">{{ error }}</div>
+      }
+
+      <form class="project-form" [formGroup]="form" (ngSubmit)="guardar()">
+        <section class="form-section">
+          <h2 class="form-section__title">
+            <i class="fa-solid fa-circle-info"></i> Informacion general
+          </h2>
+
+          <div class="mb-3">
+            <label class="form-label" for="titulo">Titulo</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-folder"></i></span>
+              <input
+                id="titulo"
+                type="text"
+                class="form-control"
+                formControlName="titulo"
+                placeholder="Ej. Redisenio del portal"
+              />
+            </div>
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label" for="descripcion">Descripcion</label>
+            <textarea
+              id="descripcion"
+              class="form-control"
+              formControlName="descripcion"
+              rows="4"
+              placeholder="Detalle breve del alcance"
+            ></textarea>
+          </div>
+        </section>
+
+        <section class="form-section form-section--last">
+          <h2 class="form-section__title">
+            <i class="fa-solid fa-calendar-days"></i> Fechas y seguimiento
+          </h2>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="fechaVencimiento">Vencimiento</label>
+              <input
+                id="fechaVencimiento"
+                type="date"
+                class="form-control"
+                formControlName="fechaVencimiento"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="prioridad">Prioridad</label>
+              <select id="prioridad" class="form-select" formControlName="prioridad">
+                <option value="ALTA">Alta</option>
+                <option value="MEDIA">Media</option>
+                <option value="BAJA">Baja</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="estado">Estado</label>
+              <select id="estado" class="form-select" formControlName="estado">
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="EN_PROGRESO">En progreso</option>
+                <option value="COMPLETADA">Completada</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <a class="btn btn-outline-secondary" routerLink="/projects">Cancelar</a>
+          <button type="submit" class="btn btn-primary btn-form-submit" [disabled]="enviando">
+            {{ editing ? 'Actualizar proyecto' : 'Guardar proyecto' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

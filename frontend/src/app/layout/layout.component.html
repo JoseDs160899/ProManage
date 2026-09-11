@@ -1,0 +1,30 @@
+<aside class="sidebar">
+  <div class="p-4 logo">
+    <i class="fa-solid fa-layer-group"></i>
+    <span>ProManage</span>
+  </div>
+  <a routerLink="/projects" routerLinkActive="active">
+    <i class="fa-solid fa-folder-open me-2"></i>Proyectos
+  </a>
+  <a href="javascript:void(0)" class="disabled-link">
+    <i class="fa-solid fa-chart-column me-2"></i>Reportes
+  </a>
+</aside>
+
+<main class="content">
+  <header class="topbar d-flex justify-content-between align-items-center">
+    <strong class="text-dark">Gestion de Proyectos</strong>
+    <div class="user-menu">
+      <div class="user-avatar">PM</div>
+      <span class="user-name">Usuario</span>
+    </div>
+  </header>
+
+  <div class="container-fluid py-4">
+    <router-outlet />
+  </div>
+
+  <footer class="text-center py-3">
+    © 2026 ProManage. Todos los derechos reservados.
+  </footer>
+</main>

@@ -1,0 +1,23 @@
+.task-done {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+
+.task-list .list-group-item {
+  border-left: 0;
+  border-right: 0;
+}
+
+.form-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.form-back-link:hover {
+  color: #0d6efd;
+}

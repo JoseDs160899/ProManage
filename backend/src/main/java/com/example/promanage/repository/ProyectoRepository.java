@@ -1,70 +1,28 @@
 package com.example.promanage.repository;
 
 import com.example.promanage.model.Proyecto;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
-public class ProyectoRepository {
+public interface ProyectoRepository extends JpaRepository<Proyecto, Long> {
 
-	private final List<Proyecto> proyectos = new ArrayList<>();
-	private final AtomicLong secuencia = new AtomicLong(1);
+	/**
+	 * Consulta JPQL: busca proyectos cuyo título contenga el texto (sin distinguir
+	 * mayúsculas/minúsculas). Resuelve la búsqueda parcial por nombre.
+	 */
+	@Query("SELECT p FROM Proyecto p WHERE LOWER(p.titulo) LIKE LOWER(CONCAT('%', :texto, '%'))")
+	List<Proyecto> buscarPorTitulo(@Param("texto") String texto);
 
-	public ProyectoRepository() {
-		proyectos.add(new Proyecto(
-				secuencia.getAndIncrement(),
-				"Sitio web institucional",
-				"Rediseño del portal corporativo",
-				LocalDate.now().plusDays(30),
-				"ALTA",
-				"EN_PROGRESO"));
-		proyectos.add(new Proyecto(
-				secuencia.getAndIncrement(),
-				"App móvil de ventas",
-				"MVP para catálogo y pedidos",
-				LocalDate.now().plusDays(60),
-				"MEDIA",
-				"PENDIENTE"));
-	}
+	/** Consulta JPQL: lista los proyectos filtrados por estado. */
+	@Query("SELECT p FROM Proyecto p WHERE p.estado = :estado ORDER BY p.fechaVencimiento ASC")
+	List<Proyecto> buscarPorEstado(@Param("estado") String estado);
 
-	public List<Proyecto> findAll() {
-		return new ArrayList<>(proyectos);
-	}
-
-	public Optional<Proyecto> findById(Long id) {
-		return proyectos.stream()
-				.filter(p -> p.getId().equals(id))
-				.findFirst();
-	}
-
-	public Proyecto save(Proyecto proyecto) {
-		if (proyecto.getId() == null) {
-			proyecto.setId(secuencia.getAndIncrement());
-			proyectos.add(proyecto);
-			return proyecto;
-		}
-
-		return findById(proyecto.getId())
-				.map(existente -> {
-					existente.setTitulo(proyecto.getTitulo());
-					existente.setDescripcion(proyecto.getDescripcion());
-					existente.setFechaVencimiento(proyecto.getFechaVencimiento());
-					existente.setPrioridad(proyecto.getPrioridad());
-					existente.setEstado(proyecto.getEstado());
-					return existente;
-				})
-				.orElseGet(() -> {
-					proyectos.add(proyecto);
-					return proyecto;
-				});
-	}
-
-	public boolean deleteById(Long id) {
-		return proyectos.removeIf(p -> p.getId().equals(id));
-	}
+	/** Consulta JPQL de agregación: cuenta cuántos proyectos hay en un estado. */
+	@Query("SELECT COUNT(p) FROM Proyecto p WHERE p.estado = :estado")
+	long contarPorEstado(@Param("estado") String estado);
 }

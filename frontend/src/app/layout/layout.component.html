@@ -14,9 +14,15 @@
 <main class="content">
   <header class="topbar d-flex justify-content-between align-items-center">
     <strong class="text-dark">Gestion de Proyectos</strong>
-    <div class="user-menu">
-      <div class="user-avatar">PM</div>
-      <span class="user-name">Usuario</span>
+    <div class="user-menu d-flex align-items-center gap-2">
+      <div class="user-avatar">{{ iniciales }}</div>
+      <div class="d-flex flex-column lh-1">
+        <span class="user-name">{{ username }}</span>
+        <small class="text-muted">{{ rol }}</small>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary ms-2" (click)="salir()" title="Cerrar sesión">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
     </div>
   </header>
 

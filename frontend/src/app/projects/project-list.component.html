@@ -45,9 +45,11 @@
       <span><i class="fa-regular fa-folder-open me-2 text-primary"></i>Registro de proyectos</span>
       <div class="d-flex align-items-center gap-2">
         <span class="badge text-bg-primary">{{ total }} registros</span>
-        <a class="btn btn-sm btn-success" routerLink="/projects/nuevo">
-          <i class="fa-solid fa-plus me-1"></i>Nuevo proyecto
-        </a>
+        @if (esAdmin) {
+          <a class="btn btn-sm btn-success" routerLink="/projects/nuevo">
+            <i class="fa-solid fa-plus me-1"></i>Nuevo proyecto
+          </a>
+        }
       </div>
     </div>
     <div class="card-body p-0">
@@ -86,12 +88,17 @@
                   </td>
                   <td class="text-center">
                     <div class="btn-group btn-group-sm">
-                      <a class="btn btn-outline-secondary" [routerLink]="['/projects', p.id, 'editar']" title="Editar">
-                        <i class="fa-solid fa-pen"></i>
+                      <a class="btn btn-outline-primary" [routerLink]="['/projects', p.id, 'tareas']" title="Tareas">
+                        <i class="fa-solid fa-list-check"></i>
                       </a>
-                      <a class="btn btn-outline-danger" [routerLink]="['/projects', p.id, 'eliminar']" title="Eliminar">
-                        <i class="fa-solid fa-trash"></i>
-                      </a>
+                      @if (esAdmin) {
+                        <a class="btn btn-outline-secondary" [routerLink]="['/projects', p.id, 'editar']" title="Editar">
+                          <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <a class="btn btn-outline-danger" [routerLink]="['/projects', p.id, 'eliminar']" title="Eliminar">
+                          <i class="fa-solid fa-trash"></i>
+                        </a>
+                      }
                     </div>
                   </td>
                 </tr>

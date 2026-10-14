@@ -1,6 +1,7 @@
 package com.example.promanage.service;
 
 import com.example.promanage.model.Proyecto;
+import com.example.promanage.model.Tarea;
 import com.example.promanage.repository.ProyectoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,18 +54,6 @@ class ProyectoServiceTest {
 	}
 
 	@Test
-	void crear_conEstadoEnBlanco_debeAsignarPendiente() {
-		Proyecto entrada = new Proyecto(99L, "Nuevo", "Desc",
-				LocalDate.now(), "MEDIA", "   ");
-		when(proyectoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-		Proyecto creado = proyectoService.crear(entrada);
-
-		assertThat(creado.getEstado()).isEqualTo("PENDIENTE");
-		assertThat(creado.getId()).isNull();
-	}
-
-	@Test
 	void crear_conEstado_debeConservarlo() {
 		Proyecto entrada = new Proyecto(null, "Nuevo", "Desc",
 				LocalDate.now(), "BAJA", "EN_PROGRESO");
@@ -74,18 +63,20 @@ class ProyectoServiceTest {
 	}
 
 	@Test
-	void actualizar_siExiste_debeGuardarConIdDeRuta() {
-		when(proyectoRepository.findById(1L)).thenReturn(Optional.of(proyecto(1L, "Viejo")));
+	void actualizar_siExiste_debeCopiarCamposYGuardar() {
+		Proyecto existente = proyecto(1L, "Viejo");
+		when(proyectoRepository.findById(1L)).thenReturn(Optional.of(existente));
 		when(proyectoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
 		Proyecto datos = new Proyecto(null, "Actualizado", "Nueva",
-				LocalDate.now(), "ALTA", "COMPLETADO");
+				LocalDate.now(), "ALTA", "COMPLETADA");
 
 		Optional<Proyecto> resultado = proyectoService.actualizar(1L, datos);
 
 		assertThat(resultado).isPresent();
 		assertThat(resultado.get().getId()).isEqualTo(1L);
 		assertThat(resultado.get().getTitulo()).isEqualTo("Actualizado");
+		assertThat(resultado.get().getEstado()).isEqualTo("COMPLETADA");
 	}
 
 	@Test
@@ -97,12 +88,34 @@ class ProyectoServiceTest {
 	}
 
 	@Test
-	void eliminar_debeRetornarResultadoDelRepositorio() {
-		when(proyectoRepository.deleteById(1L)).thenReturn(true);
-		when(proyectoRepository.deleteById(99L)).thenReturn(false);
+	void eliminar_siExiste_debeBorrarYRetornarTrue() {
+		when(proyectoRepository.existsById(1L)).thenReturn(true);
 
 		assertThat(proyectoService.eliminar(1L)).isTrue();
+		verify(proyectoRepository).deleteById(1L);
+	}
+
+	@Test
+	void eliminar_siNoExiste_debeRetornarFalse() {
+		when(proyectoRepository.existsById(99L)).thenReturn(false);
+
 		assertThat(proyectoService.eliminar(99L)).isFalse();
+		verify(proyectoRepository, never()).deleteById(any());
+	}
+
+	@Test
+	void completarProyecto_debeCompletarProyectoYSusTareas() {
+		Proyecto proyecto = proyecto(1L, "Con tareas");
+		proyecto.getTareas().add(new Tarea(1L, "t1", false, proyecto));
+		proyecto.getTareas().add(new Tarea(2L, "t2", false, proyecto));
+		when(proyectoRepository.findById(1L)).thenReturn(Optional.of(proyecto));
+		when(proyectoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+		Optional<Proyecto> resultado = proyectoService.completarProyecto(1L);
+
+		assertThat(resultado).isPresent();
+		assertThat(resultado.get().getEstado()).isEqualTo("COMPLETADA");
+		assertThat(resultado.get().getTareas()).allMatch(Tarea::isCompletada);
 	}
 
 	private static Proyecto proyecto(Long id, String titulo) {

@@ -28,4 +28,9 @@ export class ProyectoService {
   eliminar(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  /** Transacción: completa el proyecto y todas sus tareas. */
+  completar(id: number): Observable<Proyecto> {
+    return this.http.patch<Proyecto>(`${this.apiUrl}/${id}/completar`, {});
+  }
 }

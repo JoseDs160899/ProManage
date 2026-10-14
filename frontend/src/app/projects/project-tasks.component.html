@@ -1,0 +1,121 @@
+<a class="form-back-link" routerLink="/projects">
+  <i class="fa-solid fa-arrow-left"></i> Volver a proyectos
+</a>
+
+@if (error) {
+  <div class="alert alert-danger">{{ error }}</div>
+}
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="h4 mb-1">{{ proyecto?.titulo || 'Cargando...' }}</h1>
+      <p class="text-muted mb-2 small">{{ proyecto?.descripcion || '—' }}</p>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge text-bg-secondary">{{ proyecto?.estado }}</span>
+        <span class="badge text-bg-light border">{{ completadas }}/{{ total }} tareas hechas</span>
+      </div>
+    </div>
+    @if (esAdmin) {
+      <button
+        type="button"
+        class="btn btn-outline-success btn-sm"
+        (click)="completarProyecto()"
+        [disabled]="proyecto?.estado === 'COMPLETADA'"
+        title="Marca el proyecto y todas sus tareas como completadas (transacción)"
+      >
+        <i class="fa-solid fa-check-double me-1"></i>Completar proyecto
+      </button>
+    }
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <strong><i class="fa-solid fa-list-check me-2 text-primary"></i>Tareas del proyecto</strong>
+    <div class="btn-group btn-group-sm">
+      <button
+        type="button"
+        class="btn"
+        [class.btn-primary]="!soloPendientes"
+        [class.btn-outline-primary]="soloPendientes"
+        (click)="cambiarFiltro(false)"
+      >
+        Todas
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [class.btn-primary]="soloPendientes"
+        [class.btn-outline-primary]="!soloPendientes"
+        (click)="cambiarFiltro(true)"
+      >
+        Pendientes (JPQL)
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    @if (esAdmin) {
+      <form class="row g-2 mb-3" (ngSubmit)="agregar()">
+        <div class="col">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Nueva tarea..."
+            [(ngModel)]="nuevaTarea"
+            name="nuevaTarea"
+            required
+            minlength="2"
+          />
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-success" [disabled]="enviando || !nuevaTarea.trim()">
+            <i class="fa-solid fa-plus me-1"></i>Agregar
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (cargando) {
+      <div class="text-muted">Cargando tareas...</div>
+    } @else if (tareas.length === 0) {
+      <div class="text-muted">No hay tareas{{ soloPendientes ? ' pendientes' : '' }}.</div>
+    } @else {
+      <ul class="list-group list-group-flush task-list">
+        @for (t of tareas; track t.id) {
+          <li class="list-group-item d-flex align-items-center gap-2 px-0">
+            @if (esAdmin) {
+              <input
+                type="checkbox"
+                class="form-check-input m-0"
+                [checked]="t.completada"
+                (change)="toggleCompletada(t)"
+                title="Marcar completada"
+              />
+            } @else {
+              <i
+                class="fa-solid"
+                [class.fa-circle-check]="t.completada"
+                [class.text-success]="t.completada"
+                [class.fa-circle]="!t.completada"
+                [class.text-muted]="!t.completada"
+              ></i>
+            }
+            <span class="flex-grow-1" [class.task-done]="t.completada">{{ t.titulo }}</span>
+            @if (t.completada) {
+              <span class="badge text-bg-success">Hecha</span>
+            } @else {
+              <span class="badge text-bg-secondary">Pendiente</span>
+            }
+            @if (esAdmin) {
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminar(t)" title="Eliminar">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>

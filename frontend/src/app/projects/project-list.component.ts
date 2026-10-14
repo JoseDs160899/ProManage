@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Proyecto } from '../models/proyecto.model';
 import { ProyectoService } from '../services/proyecto.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-project-list',
@@ -13,10 +14,15 @@ import { ProyectoService } from '../services/proyecto.service';
 })
 export class ProjectListComponent implements OnInit {
   private readonly proyectoService = inject(ProyectoService);
+  private readonly authService = inject(AuthService);
 
   proyectos: Proyecto[] = [];
   cargando = true;
   error = '';
+
+  get esAdmin(): boolean {
+    return this.authService.esAdmin;
+  }
 
   ngOnInit(): void {
     this.cargar();

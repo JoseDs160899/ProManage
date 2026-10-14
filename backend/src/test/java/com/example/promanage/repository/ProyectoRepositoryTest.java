@@ -3,57 +3,62 @@ package com.example.promanage.repository;
 import com.example.promanage.model.Proyecto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Pruebas de persistencia reales contra una base H2 en memoria (@DataJpaTest).
+ * Verifican las consultas JPQL del repositorio.
+ */
+@DataJpaTest
 class ProyectoRepositoryTest {
 
+	@Autowired
 	ProyectoRepository repository;
 
 	@BeforeEach
 	void setUp() {
-		repository = new ProyectoRepository();
+		repository.deleteAll();
+		repository.save(new Proyecto(null, "Portal web", "d", LocalDate.now(), "ALTA", "EN_PROGRESO"));
+		repository.save(new Proyecto(null, "App web ventas", "d", LocalDate.now(), "MEDIA", "PENDIENTE"));
+		repository.save(new Proyecto(null, "Migración datos", "d", LocalDate.now(), "BAJA", "PENDIENTE"));
 	}
 
 	@Test
-	void findAll_debeIncluirDatosSemilla() {
-		assertThat(repository.findAll()).hasSize(2);
+	void buscarPorTitulo_debeFiltrarSinDistinguirMayusculas() {
+		List<Proyecto> resultado = repository.buscarPorTitulo("web");
+
+		assertThat(resultado).hasSize(2)
+				.extracting(Proyecto::getTitulo)
+				.containsExactlyInAnyOrder("Portal web", "App web ventas");
 	}
 
 	@Test
-	void save_sinId_debeAsignarIdIncremental() {
-		Proyecto nuevo = new Proyecto(null, "T3", "d", LocalDate.now(), "BAJA", "PENDIENTE");
+	void buscarPorEstado_debeDevolverSoloEseEstado() {
+		List<Proyecto> pendientes = repository.buscarPorEstado("PENDIENTE");
 
-		Proyecto guardado = repository.save(nuevo);
-
-		assertThat(guardado.getId()).isEqualTo(3L);
-		assertThat(repository.findAll()).hasSize(3);
+		assertThat(pendientes).hasSize(2)
+				.allMatch(p -> p.getEstado().equals("PENDIENTE"));
 	}
 
 	@Test
-	void save_conIdExistente_debeActualizarCampos() {
-		Proyecto cambios = new Proyecto(1L, "Nuevo título", "Nueva desc",
-				LocalDate.of(2030, 1, 1), "BAJA", "COMPLETADO");
-
-		Proyecto actualizado = repository.save(cambios);
-
-		assertThat(actualizado.getTitulo()).isEqualTo("Nuevo título");
-		assertThat(repository.findById(1L)).get()
-				.extracting(Proyecto::getEstado)
-				.isEqualTo("COMPLETADO");
-		assertThat(repository.findAll()).hasSize(2);
+	void contarPorEstado_debeContarCorrectamente() {
+		assertThat(repository.contarPorEstado("PENDIENTE")).isEqualTo(2);
+		assertThat(repository.contarPorEstado("EN_PROGRESO")).isEqualTo(1);
+		assertThat(repository.contarPorEstado("COMPLETADA")).isZero();
 	}
 
 	@Test
-	void deleteById_existente_debeRetornarTrue() {
-		assertThat(repository.deleteById(1L)).isTrue();
-		assertThat(repository.findById(1L)).isEmpty();
-	}
+	void save_debePersistirYGenerarId() {
+		Proyecto guardado = repository.save(
+				new Proyecto(null, "Nuevo", "d", LocalDate.now(), "ALTA", "PENDIENTE"));
 
-	@Test
-	void deleteById_inexistente_debeRetornarFalse() {
-		assertThat(repository.deleteById(999L)).isFalse();
+		assertThat(guardado.getId()).isNotNull();
+		assertThat(repository.findById(guardado.getId())).isPresent();
 	}
 }

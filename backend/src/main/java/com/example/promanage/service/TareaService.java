@@ -31,30 +31,63 @@ public class TareaService {
 		return tareaRepository.buscarPendientesPorProyecto(proyectoId);
 	}
 
-	/** Crea una tarea asociada a un proyecto existente. */
+	/** Crea una tarea asociada a un proyecto existente y recalcula el estado del proyecto. */
 	@Transactional
 	public Optional<Tarea> crear(Long proyectoId, Tarea tarea) {
 		return proyectoRepository.findById(proyectoId).map(proyecto -> {
 			tarea.setId(null);
 			tarea.setProyecto(proyecto);
-			return tareaRepository.save(tarea);
+			Tarea guardada = tareaRepository.save(tarea);
+			actualizarEstadoProyecto(proyecto);
+			return guardada;
 		});
 	}
 
+	/**
+	 * Cambia el estado de la tarea y sincroniza el estado del proyecto:
+	 * - ninguna hecha → PENDIENTE
+	 * - alguna hecha (no todas) → EN_PROGRESO
+	 * - todas hechas → COMPLETADA
+	 */
 	@Transactional
 	public Optional<Tarea> cambiarEstado(Long tareaId, boolean completada) {
 		return tareaRepository.findById(tareaId).map(tarea -> {
 			tarea.setCompletada(completada);
-			return tareaRepository.save(tarea);
+			Tarea guardada = tareaRepository.save(tarea);
+			actualizarEstadoProyecto(tarea.getProyecto());
+			return guardada;
 		});
 	}
 
 	@Transactional
 	public boolean eliminar(Long tareaId) {
-		if (!tareaRepository.existsById(tareaId)) {
+		Optional<Tarea> opt = tareaRepository.findById(tareaId);
+		if (opt.isEmpty()) {
 			return false;
 		}
+		Long proyectoId = opt.get().getProyecto().getId();
 		tareaRepository.deleteById(tareaId);
+		proyectoRepository.findById(proyectoId).ifPresent(this::actualizarEstadoProyecto);
 		return true;
+	}
+
+	/**
+	 * Regla de negocio: el avance de las tareas determina el estado del proyecto.
+	 */
+	private void actualizarEstadoProyecto(Proyecto proyecto) {
+		List<Tarea> tareas = tareaRepository.buscarPorProyecto(proyecto.getId());
+		if (tareas.isEmpty()) {
+			proyecto.setEstado("PENDIENTE");
+		} else {
+			long hechas = tareas.stream().filter(Tarea::isCompletada).count();
+			if (hechas == 0) {
+				proyecto.setEstado("PENDIENTE");
+			} else if (hechas == tareas.size()) {
+				proyecto.setEstado("COMPLETADA");
+			} else {
+				proyecto.setEstado("EN_PROGRESO");
+			}
+		}
+		proyectoRepository.save(proyecto);
 	}
 }

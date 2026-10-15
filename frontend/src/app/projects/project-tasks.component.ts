@@ -34,6 +34,10 @@ export class ProjectTasksComponent implements OnInit {
     return this.authService.esAdmin;
   }
 
+  get esOperador(): boolean {
+    return this.authService.rol === 'OPERADOR';
+  }
+
   get total(): number {
     return this.tareas.length;
   }
@@ -46,6 +50,14 @@ export class ProjectTasksComponent implements OnInit {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
     this.cargarProyecto();
     this.cargarTareas();
+  }
+
+  /** ADMIN siempre puede cambiar; OPERADOR solo puede marcar pendientes (no desmarcar). */
+  puedeInteractuar(tarea: Tarea): boolean {
+    if (this.esAdmin) {
+      return true;
+    }
+    return this.esOperador && !tarea.completada;
   }
 
   cargarProyecto(): void {
@@ -90,6 +102,7 @@ export class ProjectTasksComponent implements OnInit {
         this.nuevaTarea = '';
         this.enviando = false;
         this.cargarTareas();
+        this.cargarProyecto();
       },
       error: () => {
         this.error = 'No se pudo crear la tarea.';
@@ -99,17 +112,29 @@ export class ProjectTasksComponent implements OnInit {
   }
 
   toggleCompletada(tarea: Tarea): void {
-    if (!this.esAdmin || !tarea.id) {
+    if (!tarea.id || !this.puedeInteractuar(tarea)) {
       return;
     }
-    this.tareaService.completar(tarea.id, !tarea.completada).subscribe({
+
+    const nuevoValor = !tarea.completada;
+    // OPERADOR solo completa; no desmarca
+    if (this.esOperador && !nuevoValor) {
+      return;
+    }
+
+    this.tareaService.completar(tarea.id, nuevoValor).subscribe({
       next: (actualizada) => {
         tarea.completada = actualizada.completada;
+        this.cargarProyecto();
         if (this.soloPendientes) {
           this.cargarTareas();
         }
       },
-      error: () => (this.error = 'No se pudo actualizar la tarea.')
+      error: (err) => {
+        this.error = err.status === 403
+          ? 'No tienes permiso para desmarcar esta tarea.'
+          : 'No se pudo actualizar la tarea.';
+      }
     });
   }
 
@@ -121,21 +146,33 @@ export class ProjectTasksComponent implements OnInit {
       return;
     }
     this.tareaService.eliminar(tarea.id).subscribe({
-      next: () => this.cargarTareas(),
+      next: () => {
+        this.cargarTareas();
+        this.cargarProyecto();
+      },
       error: () => (this.error = 'No se pudo eliminar la tarea.')
     });
   }
 
-  completarProyecto(): void {
-    if (!this.esAdmin) {
-      return;
+  etiquetaEstado(estado?: string): string {
+    switch (estado) {
+      case 'EN_PROGRESO':
+        return 'En progreso';
+      case 'COMPLETADA':
+        return 'Completada';
+      default:
+        return 'Pendiente';
     }
-    this.proyectoService.completar(this.proyectoId).subscribe({
-      next: (p) => {
-        this.proyecto = p;
-        this.cargarTareas();
-      },
-      error: () => (this.error = 'No se pudo completar el proyecto.')
-    });
+  }
+
+  estadoBadge(estado?: string): string {
+    switch (estado) {
+      case 'EN_PROGRESO':
+        return 'text-bg-primary';
+      case 'COMPLETADA':
+        return 'text-bg-success';
+      default:
+        return 'text-bg-secondary';
+    }
   }
 }

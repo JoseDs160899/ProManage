@@ -5,6 +5,7 @@ import com.example.promanage.service.TareaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,8 +39,23 @@ public class TareaController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 
+	/**
+	 * Marca/desmarca una tarea. ADMIN puede completar y deshacer.
+	 * OPERADOR solo puede completar (valor=true); desmarcar → 403.
+	 */
 	@PatchMapping("/{id}/completar")
-	public ResponseEntity<Tarea> completar(@PathVariable Long id, @RequestParam(defaultValue = "true") boolean valor) {
+	public ResponseEntity<Tarea> completar(
+			@PathVariable Long id,
+			@RequestParam(defaultValue = "true") boolean valor,
+			Authentication authentication) {
+
+		boolean esAdmin = authentication.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+		if (!valor && !esAdmin) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+		}
+
 		return tareaService.cambiarEstado(id, valor)
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());

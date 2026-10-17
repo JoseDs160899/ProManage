@@ -17,11 +17,15 @@ export class TareaService {
     return this.http.get<Tarea[]>(`${this.apiUrl}/proyecto/${proyectoId}/pendientes`);
   }
 
-  crear(proyectoId: number, titulo: string): Observable<Tarea> {
+  crear(proyectoId: number, titulo: string, operadorId?: number | null): Observable<Tarea> {
     return this.http.post<Tarea>(`${this.apiUrl}/proyecto/${proyectoId}`, {
       titulo,
-      completada: false
+      operadorId: operadorId ?? null
     });
+  }
+
+  asignarOperador(tareaId: number, operadorId: number | null): Observable<Tarea> {
+    return this.http.patch<Tarea>(`${this.apiUrl}/${tareaId}/asignar`, { operadorId });
   }
 
   completar(id: number, valor = true): Observable<Tarea> {

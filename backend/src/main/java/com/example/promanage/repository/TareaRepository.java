@@ -11,11 +11,21 @@ import java.util.List;
 @Repository
 public interface TareaRepository extends JpaRepository<Tarea, Long> {
 
-	/** Consulta JPQL con JOIN: tareas de un proyecto concreto. */
-	@Query("SELECT t FROM Tarea t WHERE t.proyecto.id = :proyectoId ORDER BY t.id ASC")
+	/** Consulta JPQL con JOIN: tareas de un proyecto e incluye el operador asignado. */
+	@Query("""
+			SELECT t FROM Tarea t
+			LEFT JOIN FETCH t.operador
+			WHERE t.proyecto.id = :proyectoId
+			ORDER BY t.id ASC
+			""")
 	List<Tarea> buscarPorProyecto(@Param("proyectoId") Long proyectoId);
 
 	/** Consulta JPQL: tareas pendientes (no completadas) de un proyecto. */
-	@Query("SELECT t FROM Tarea t WHERE t.proyecto.id = :proyectoId AND t.completada = false")
+	@Query("""
+			SELECT t FROM Tarea t
+			LEFT JOIN FETCH t.operador
+			WHERE t.proyecto.id = :proyectoId AND t.completada = false
+			ORDER BY t.id ASC
+			""")
 	List<Tarea> buscarPendientesPorProyecto(@Param("proyectoId") Long proyectoId);
 }

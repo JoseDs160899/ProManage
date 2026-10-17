@@ -3,6 +3,11 @@
   color: #6b7280;
 }
 
+.operador-select {
+  width: auto;
+  min-width: 140px;
+}
+
 .task-list .list-group-item {
   border-left: 0;
   border-right: 0;

@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Proyecto } from '../models/proyecto.model';
 import { Tarea } from '../models/tarea.model';
+import { Usuario } from '../models/usuario.model';
 import { ProyectoService } from '../services/proyecto.service';
 import { TareaService } from '../services/tarea.service';
+import { UsuarioService } from '../services/usuario.service';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -19,14 +21,17 @@ export class ProjectTasksComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly proyectoService = inject(ProyectoService);
   private readonly tareaService = inject(TareaService);
+  private readonly usuarioService = inject(UsuarioService);
   private readonly authService = inject(AuthService);
 
   proyecto?: Proyecto;
   tareas: Tarea[] = [];
+  operadores: Usuario[] = [];
   proyectoId = 0;
   cargando = true;
   error = '';
   nuevaTarea = '';
+  operadorSeleccionado: number | null = null;
   enviando = false;
   soloPendientes = false;
 
@@ -50,6 +55,7 @@ export class ProjectTasksComponent implements OnInit {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
     this.cargarProyecto();
     this.cargarTareas();
+    this.cargarOperadores();
   }
 
   /** ADMIN siempre puede cambiar; OPERADOR solo puede marcar pendientes (no desmarcar). */
@@ -64,6 +70,18 @@ export class ProjectTasksComponent implements OnInit {
     this.proyectoService.obtener(this.proyectoId).subscribe({
       next: (p) => (this.proyecto = p),
       error: () => (this.error = 'No se pudo cargar el proyecto.')
+    });
+  }
+
+  cargarOperadores(): void {
+    this.usuarioService.listarOperadores().subscribe({
+      next: (ops) => {
+        this.operadores = ops;
+        if (ops.length > 0 && this.operadorSeleccionado == null) {
+          this.operadorSeleccionado = ops[0].id;
+        }
+      },
+      error: () => (this.error = 'No se pudieron cargar los operadores.')
     });
   }
 
@@ -97,7 +115,7 @@ export class ProjectTasksComponent implements OnInit {
       return;
     }
     this.enviando = true;
-    this.tareaService.crear(this.proyectoId, titulo).subscribe({
+    this.tareaService.crear(this.proyectoId, titulo, this.operadorSeleccionado).subscribe({
       next: () => {
         this.nuevaTarea = '';
         this.enviando = false;
@@ -111,13 +129,25 @@ export class ProjectTasksComponent implements OnInit {
     });
   }
 
+  cambiarOperador(tarea: Tarea, operadorId: string): void {
+    if (!this.esAdmin || !tarea.id) {
+      return;
+    }
+    const id = operadorId === '' ? null : Number(operadorId);
+    this.tareaService.asignarOperador(tarea.id, id).subscribe({
+      next: (actualizada) => {
+        tarea.operador = actualizada.operador;
+      },
+      error: () => (this.error = 'No se pudo asignar el operador.')
+    });
+  }
+
   toggleCompletada(tarea: Tarea): void {
     if (!tarea.id || !this.puedeInteractuar(tarea)) {
       return;
     }
 
     const nuevoValor = !tarea.completada;
-    // OPERADOR solo completa; no desmarca
     if (this.esOperador && !nuevoValor) {
       return;
     }
@@ -151,6 +181,23 @@ export class ProjectTasksComponent implements OnInit {
         this.cargarProyecto();
       },
       error: () => (this.error = 'No se pudo eliminar la tarea.')
+    });
+  }
+
+  /** Transacción: marca el proyecto y todas sus tareas como completadas. */
+  completarProyecto(): void {
+    if (!this.esAdmin) {
+      return;
+    }
+    if (!confirm('¿Completar el proyecto y todas sus tareas?')) {
+      return;
+    }
+    this.proyectoService.completar(this.proyectoId).subscribe({
+      next: (p) => {
+        this.proyecto = p;
+        this.cargarTareas();
+      },
+      error: () => (this.error = 'No se pudo completar el proyecto.')
     });
   }
 

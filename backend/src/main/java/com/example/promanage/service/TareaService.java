@@ -2,10 +2,14 @@ package com.example.promanage.service;
 
 import com.example.promanage.model.Proyecto;
 import com.example.promanage.model.Tarea;
+import com.example.promanage.model.Usuario;
 import com.example.promanage.repository.ProyectoRepository;
 import com.example.promanage.repository.TareaRepository;
+import com.example.promanage.repository.UsuarioRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,10 +19,15 @@ public class TareaService {
 
 	private final TareaRepository tareaRepository;
 	private final ProyectoRepository proyectoRepository;
+	private final UsuarioRepository usuarioRepository;
 
-	public TareaService(TareaRepository tareaRepository, ProyectoRepository proyectoRepository) {
+	public TareaService(
+			TareaRepository tareaRepository,
+			ProyectoRepository proyectoRepository,
+			UsuarioRepository usuarioRepository) {
 		this.tareaRepository = tareaRepository;
 		this.proyectoRepository = proyectoRepository;
+		this.usuarioRepository = usuarioRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -31,24 +40,30 @@ public class TareaService {
 		return tareaRepository.buscarPendientesPorProyecto(proyectoId);
 	}
 
-	/** Crea una tarea asociada a un proyecto existente y recalcula el estado del proyecto. */
+	/** Crea una tarea asociada a un proyecto y opcionalmente a un operador. */
 	@Transactional
-	public Optional<Tarea> crear(Long proyectoId, Tarea tarea) {
+	public Optional<Tarea> crear(Long proyectoId, String titulo, Long operadorId) {
 		return proyectoRepository.findById(proyectoId).map(proyecto -> {
-			tarea.setId(null);
+			Tarea tarea = new Tarea();
+			tarea.setTitulo(titulo);
+			tarea.setCompletada(false);
 			tarea.setProyecto(proyecto);
+			tarea.setOperador(resolverOperador(operadorId));
 			Tarea guardada = tareaRepository.save(tarea);
 			actualizarEstadoProyecto(proyecto);
 			return guardada;
 		});
 	}
 
-	/**
-	 * Cambia el estado de la tarea y sincroniza el estado del proyecto:
-	 * - ninguna hecha → PENDIENTE
-	 * - alguna hecha (no todas) → EN_PROGRESO
-	 * - todas hechas → COMPLETADA
-	 */
+	/** Reasigna el operador de una tarea (solo ADMIN). */
+	@Transactional
+	public Optional<Tarea> asignarOperador(Long tareaId, Long operadorId) {
+		return tareaRepository.findById(tareaId).map(tarea -> {
+			tarea.setOperador(resolverOperador(operadorId));
+			return tareaRepository.save(tarea);
+		});
+	}
+
 	@Transactional
 	public Optional<Tarea> cambiarEstado(Long tareaId, boolean completada) {
 		return tareaRepository.findById(tareaId).map(tarea -> {
@@ -71,9 +86,18 @@ public class TareaService {
 		return true;
 	}
 
-	/**
-	 * Regla de negocio: el avance de las tareas determina el estado del proyecto.
-	 */
+	private Usuario resolverOperador(Long operadorId) {
+		if (operadorId == null) {
+			return null;
+		}
+		Usuario usuario = usuarioRepository.findById(operadorId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Operador no encontrado"));
+		if (!"OPERADOR".equals(usuario.getRol())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El usuario seleccionado no es OPERADOR");
+		}
+		return usuario;
+	}
+
 	private void actualizarEstadoProyecto(Proyecto proyecto) {
 		List<Tarea> tareas = tareaRepository.buscarPorProyecto(proyecto.getId());
 		if (tareas.isEmpty()) {

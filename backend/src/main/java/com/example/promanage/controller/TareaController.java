@@ -1,5 +1,6 @@
 package com.example.promanage.controller;
 
+import com.example.promanage.dto.TareaRequest;
 import com.example.promanage.model.Tarea;
 import com.example.promanage.service.TareaService;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tareas")
@@ -20,22 +22,33 @@ public class TareaController {
 		this.tareaService = tareaService;
 	}
 
-	/** Lista las tareas de un proyecto (consulta JPQL con JOIN). */
 	@GetMapping("/proyecto/{proyectoId}")
 	public List<Tarea> listarPorProyecto(@PathVariable Long proyectoId) {
 		return tareaService.listarPorProyecto(proyectoId);
 	}
 
-	/** Lista solo las tareas pendientes de un proyecto. */
 	@GetMapping("/proyecto/{proyectoId}/pendientes")
 	public List<Tarea> listarPendientes(@PathVariable Long proyectoId) {
 		return tareaService.listarPendientesPorProyecto(proyectoId);
 	}
 
 	@PostMapping("/proyecto/{proyectoId}")
-	public ResponseEntity<Tarea> crear(@PathVariable Long proyectoId, @Valid @RequestBody Tarea tarea) {
-		return tareaService.crear(proyectoId, tarea)
+	public ResponseEntity<Tarea> crear(
+			@PathVariable Long proyectoId,
+			@Valid @RequestBody TareaRequest request) {
+		return tareaService.crear(proyectoId, request.titulo(), request.operadorId())
 				.map(creada -> ResponseEntity.status(HttpStatus.CREATED).body(creada))
+				.orElse(ResponseEntity.notFound().build());
+	}
+
+	/** Reasigna el operador responsable (solo ADMIN por SecurityConfig). */
+	@PatchMapping("/{id}/asignar")
+	public ResponseEntity<Tarea> asignar(
+			@PathVariable Long id,
+			@RequestBody Map<String, Long> body) {
+		Long operadorId = body.get("operadorId");
+		return tareaService.asignarOperador(id, operadorId)
+				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
 

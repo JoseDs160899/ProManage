@@ -7,19 +7,32 @@
 }
 
 <div class="card shadow-sm mb-3">
-  <div class="card-body">
-    <h1 class="h4 mb-1">{{ proyecto?.titulo || 'Cargando...' }}</h1>
-    <p class="text-muted mb-2 small">{{ proyecto?.descripcion || '—' }}</p>
-    <div class="d-flex flex-wrap gap-2">
-      <span class="badge" [class]="estadoBadge(proyecto?.estado)">
-        {{ etiquetaEstado(proyecto?.estado) }}
-      </span>
-      <span class="badge text-bg-light border">{{ completadas }}/{{ total }} tareas hechas</span>
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="h4 mb-1">{{ proyecto?.titulo || 'Cargando...' }}</h1>
+      <p class="text-muted mb-2 small">{{ proyecto?.descripcion || '—' }}</p>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge" [class]="estadoBadge(proyecto?.estado)">
+          {{ etiquetaEstado(proyecto?.estado) }}
+        </span>
+        <span class="badge text-bg-light border">{{ completadas }}/{{ total }} tareas hechas</span>
+      </div>
+      <p class="text-muted small mb-0 mt-2">
+        Al completar una tarea el proyecto pasa a <strong>En progreso</strong>.
+        Cuando todas están hechas, pasa a <strong>Completada</strong>.
+      </p>
     </div>
-    <p class="text-muted small mb-0 mt-2">
-      Al completar una tarea el proyecto pasa a <strong>En progreso</strong>.
-      Cuando todas están hechas, pasa a <strong>Completada</strong>.
-    </p>
+    @if (esAdmin) {
+      <button
+        type="button"
+        class="btn btn-outline-success btn-sm"
+        (click)="completarProyecto()"
+        [disabled]="proyecto?.estado === 'COMPLETADA'"
+        title="Transacción: completa el proyecto y todas sus tareas"
+      >
+        <i class="fa-solid fa-check-double me-1"></i>Completar proyecto
+      </button>
+    }
   </div>
 </div>
 
@@ -50,20 +63,30 @@
 
   <div class="card-body">
     @if (esAdmin) {
-      <form class="row g-2 mb-3" (ngSubmit)="agregar()">
-        <div class="col">
+      <form class="row g-2 mb-3 align-items-end" (ngSubmit)="agregar()">
+        <div class="col-md-6">
+          <label class="form-label small mb-1">Nueva tarea</label>
           <input
             type="text"
             class="form-control"
-            placeholder="Nueva tarea..."
+            placeholder="Descripción de la tarea..."
             [(ngModel)]="nuevaTarea"
             name="nuevaTarea"
             required
             minlength="2"
           />
         </div>
-        <div class="col-auto">
-          <button type="submit" class="btn btn-success" [disabled]="enviando || !nuevaTarea.trim()">
+        <div class="col-md-4">
+          <label class="form-label small mb-1">Operador asignado</label>
+          <select class="form-select" [(ngModel)]="operadorSeleccionado" name="operadorSeleccionado">
+            <option [ngValue]="null">Sin asignar</option>
+            @for (op of operadores; track op.id) {
+              <option [ngValue]="op.id">{{ op.username }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-success w-100" [disabled]="enviando || !nuevaTarea.trim()">
             <i class="fa-solid fa-plus me-1"></i>Agregar
           </button>
         </div>
@@ -77,7 +100,7 @@
     } @else {
       <ul class="list-group list-group-flush task-list">
         @for (t of tareas; track t.id) {
-          <li class="list-group-item d-flex align-items-center gap-2 px-0">
+          <li class="list-group-item d-flex flex-wrap align-items-center gap-2 px-0">
             <input
               type="checkbox"
               class="form-check-input m-0"
@@ -89,6 +112,27 @@
                 : (t.completada ? 'Completada: no puedes desmarcar' : 'Marcar como completada')"
             />
             <span class="flex-grow-1" [class.task-done]="t.completada">{{ t.titulo }}</span>
+
+            @if (esAdmin) {
+              <select
+                class="form-select form-select-sm operador-select"
+                [ngModel]="t.operador?.id ?? ''"
+                (ngModelChange)="cambiarOperador(t, $event)"
+                [name]="'op-' + t.id"
+                title="Asignar operador"
+              >
+                <option value="">Sin asignar</option>
+                @for (op of operadores; track op.id) {
+                  <option [value]="op.id">{{ op.username }}</option>
+                }
+              </select>
+            } @else {
+              <span class="badge text-bg-info">
+                <i class="fa-solid fa-user me-1"></i>
+                {{ t.operador?.username || 'Sin asignar' }}
+              </span>
+            }
+
             @if (t.completada) {
               <span class="badge text-bg-success">Hecha</span>
             } @else {

@@ -53,12 +53,15 @@ public class SecurityConfig {
 								.hasAnyRole("ADMIN", "OPERADOR")
 						.requestMatchers(HttpMethod.GET, "/api/tareas", "/api/tareas/**")
 								.hasAnyRole("ADMIN", "OPERADOR")
+						.requestMatchers(HttpMethod.GET, "/api/usuarios/operadores")
+								.hasAnyRole("ADMIN", "OPERADOR")
 						// Completar tarea: ADMIN y OPERADOR (OPERADOR no puede desmarcar: lo valida el controller)
 						.requestMatchers(HttpMethod.PATCH, "/api/tareas/*/completar")
 								.hasAnyRole("ADMIN", "OPERADOR")
 						// Operaciones administrativas (escritura): solo ADMIN
 						.requestMatchers("/api/projects", "/api/projects/**").hasRole("ADMIN")
 						.requestMatchers("/api/tareas", "/api/tareas/**").hasRole("ADMIN")
+						.requestMatchers("/api/usuarios/**").hasRole("ADMIN")
 						.anyRequest().authenticated())
 				// Sin autenticación → 401; autenticado sin rol suficiente → 403
 				.exceptionHandling(ex -> ex

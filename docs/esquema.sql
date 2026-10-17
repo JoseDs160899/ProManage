@@ -41,9 +41,13 @@ CREATE TABLE IF NOT EXISTS tareas (
     titulo      VARCHAR(150) NOT NULL,
     completada  BIT(1)       NOT NULL DEFAULT 0,
     proyecto_id BIGINT       NOT NULL,
+    operador_id BIGINT       NULL,          -- operador asignado (usuarios.rol = OPERADOR)
     CONSTRAINT fk_tarea_proyecto
         FOREIGN KEY (proyecto_id) REFERENCES proyectos (id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_tarea_operador
+        FOREIGN KEY (operador_id) REFERENCES usuarios (id)
+        ON DELETE SET NULL
 );
 
 -- ============================================================
